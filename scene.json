@@ -1,0 +1,55 @@
+{
+  "ecs7": true,
+  "runtimeVersion": "7",
+  "display": {
+    "title": "Friendzone Campfire",
+    "description": "A cozy co-op campfire hangout. Gather wood, keep the communal fire alive together, roast marshmallows, and level up the camp with friends. Built mobile-first.",
+    "navmapThumbnail": "images/scene-thumbnail.png",
+    "favicon": "favicon_asset"
+  },
+  "owner": "",
+  "contact": {
+    "name": "",
+    "email": ""
+  },
+  "main": "bin/index.js",
+  "tags": ["social", "multiplayer", "cooperative", "hangout", "campfire", "mobile", "game"],
+  "worldConfiguration": {
+    "name": "softalpha.dcl.eth"
+  },
+  "scene": {
+    "parcels": [
+      "0,0"
+    ],
+    "base": "0,0"
+  },
+  "spawnPoints": [
+    {
+      "name": "spawn1",
+      "default": true,
+      "position": {
+        "x": [
+          1,
+          5
+        ],
+        "y": [
+          0,
+          0
+        ],
+        "z": [
+          1,
+          5
+        ]
+      },
+      "cameraTarget": {
+        "x": 8,
+        "y": 1,
+        "z": 8
+      }
+    }
+  ],
+  "featureToggles": {
+    "voiceChat": "enabled",
+    "portableExperiences": "enabled"
+  }
+}
