@@ -7,6 +7,8 @@ A cozy **co-op hangout** for Decentraland, built mobile-first for the
 > Gather wood, feed the flames together, roast marshmallows, and level up the
 > camp with everyone who shows up.
 
+**Play it:** [`softalpha.dcl.eth`](https://decentraland.org/jump?realm=softalpha.dcl.eth)
+
 ---
 
 ## The idea
@@ -81,57 +83,6 @@ sense to do right now, so there's nothing to memorise.
 > (no database). Dropping in a real backend (e.g. the Decentraland multiplayer
 > server) for cross-session persistence is the natural next step and the state
 > model is already shaped for it.
-
----
-
-## Project structure
-
-```
-src/
-  index.ts        main() — wires everything, clears template leftovers
-  config.ts       all tuning + layout constants
-  state.ts        synced component, shared clock, local player state, leaderboard
-  sync.ts         networking, decay, social message handlers, feedFire()
-  environment.ts  ground, trees, rocks, fence, level-reactive lanterns, fireflies, signs
-  campfire.ts     fire pit, animated flame + embers, seats, "add wood" + "sit" actions
-  wood.ts         wood piles with respawn, gather action, chop particles
-  social.ts       invite / cheers / warm up / marshmallow roasting
-  ui.tsx          the mobile HUD (React ECS)
-```
-
-## Run it
-
-Requires Node 18+ and the Decentraland SDK7 (installed via `npm install`).
-
-```bash
-npm install
-npm run start   # local preview
-npm run build   # type-check + bundle
-```
-
-Open the preview and, for the real experience, test in the
-**[Decentraland Mobile App](https://decentraland.org/download)**. SDK7 reference:
-[docs.decentraland.org](https://docs.decentraland.org/creator/).
-
-## Deploy to a World
-
-```bash
-npm run deploy -- --target-content https://worlds-content-server.decentraland.org
-```
-
-After deploying, set your World address in [`src/config.ts`](src/config.ts):
-
-```ts
-export const WORLD_URL = 'your-name.dcl.eth'
-```
-
-so the in-scene **"Bring a friend"** sign shows the real link, then redeploy.
-
-## Tuning
-
-Everything that shapes the feel of the game — decay rate, fuel per log, carry
-limit, wood respawn time, reach distances, level thresholds, marshmallow timing
-— is at the top of [`src/config.ts`](src/config.ts).
 
 ---
 
