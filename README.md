@@ -101,13 +101,17 @@ src/
 
 ## Run it
 
+Requires Node 18+ and the Decentraland SDK7 (installed via `npm install`).
+
 ```bash
 npm install
-npm run start
+npm run start   # local preview
+npm run build   # type-check + bundle
 ```
 
 Open the preview and, for the real experience, test in the
-**[Decentraland Mobile App](https://decentraland.org/download)**.
+**[Decentraland Mobile App](https://decentraland.org/download)**. SDK7 reference:
+[docs.decentraland.org](https://docs.decentraland.org/creator/).
 
 ## Deploy to a World
 
