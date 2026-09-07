@@ -27,7 +27,13 @@ export const sceneBus = new MessageBus()
 /** The single entity holding the replicated campfire state. */
 export const stateEntity = engine.addEntity()
 CampfireState.create(stateEntity, defaultCampfireState)
-syncEntity(stateEntity, [CampfireState.componentId], SYNC_STATE_ENUM_ID)
+// Networking is best-effort: if the sync transport isn't ready the scene still
+// runs single-player rather than failing to load.
+try {
+  syncEntity(stateEntity, [CampfireState.componentId], SYNC_STATE_ENUM_ID)
+} catch (e) {
+  console.error('[campfire] syncEntity failed; running unsynced', e)
+}
 
 // --- Identity -----------------------------------------------------------
 let cachedName = ''
