@@ -6,6 +6,7 @@ import {
   DECAY_PER_SEC,
   FUEL_PER_LOG,
   MAX_FUEL,
+  MIN_FUEL,
   SYNC_STATE_ENUM_ID,
   levelForContribution
 } from './config'
@@ -50,7 +51,7 @@ export function identity(): { id: string; name: string } {
 export function feedFire(logs: number): void {
   if (logs <= 0) return
   const s = CampfireState.get(stateEntity)
-  const wasOut = s.fuel <= 0
+  const wasOut = s.fuel <= MIN_FUEL + 1
   const m = CampfireState.getMutable(stateEntity)
   m.fuel = Math.min(MAX_FUEL, m.fuel + logs * FUEL_PER_LOG)
   m.totalLogs += logs
@@ -119,10 +120,11 @@ function coreSystem(dt: number): void {
   const t = now()
 
   // Rate-limited decay: whichever client crosses the 1s mark first applies it.
+  // Fuel never drops below MIN_FUEL — the fire always keeps a small ember.
   if (t - s.lastTickAt >= 1.0) {
     const m = CampfireState.getMutable(stateEntity)
     const step = Math.min(t - m.lastTickAt, 5)
-    if (m.fuel > 0) m.fuel = Math.max(0, m.fuel - DECAY_PER_SEC * step)
+    if (m.fuel > MIN_FUEL) m.fuel = Math.max(MIN_FUEL, m.fuel - DECAY_PER_SEC * step)
     m.lastTickAt = t
   }
 

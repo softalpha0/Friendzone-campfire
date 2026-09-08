@@ -292,13 +292,16 @@ function flameSystem(dt: number): void {
 
   // floating status (only rewrite when the displayed values change)
   const pct = Math.ceil(Math.max(0, s.fuel))
-  const statusKey = out ? `out|${s.level}` : `${pct}|${s.level}`
+  const critical = s.fuel < 15
+  const statusKey = `${critical ? 'low' : ''}${pct}|${s.level}`
   if (statusKey !== lastStatusKey) {
     lastStatusKey = statusKey
     const label = TextShape.getMutable(statusLabel)
-    label.text = out ? '❄️ THE FIRE WENT OUT\nadd wood!' : `🔥 ${pct}%\nLevel ${s.level}`
+    label.text = critical
+      ? `🥶 ${pct}% — feed me!\nLevel ${s.level}`
+      : `🔥 ${pct}%\nLevel ${s.level}`
     label.textColor =
-      out || s.fuel < 25 ? Color4.create(1, 0.4, 0.3, 1) : Color4.create(1, 0.85, 0.4, 1)
+      s.fuel < 25 ? Color4.create(1, 0.4, 0.3, 1) : Color4.create(1, 0.85, 0.4, 1)
   }
 }
 

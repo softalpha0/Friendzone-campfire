@@ -24,9 +24,12 @@ export const WOOD_PILES: Vector3[] = [
 
 // --- Gameplay tuning ----------------------------------------------------
 export const MAX_FUEL = 100
-export const START_FUEL = 55
+export const START_FUEL = 70
+/** The fire never fully dies — it always keeps a small ember to rebuild from,
+ *  so a solo visitor never arrives to a cold, dead pit. */
+export const MIN_FUEL = 5
 /** Fuel burned per second while nobody feeds the fire. */
-export const DECAY_PER_SEC = 1.5
+export const DECAY_PER_SEC = 1.0
 /** Fuel restored per log dropped into the fire. */
 export const FUEL_PER_LOG = 10
 /** Logs gained per gather action. */
