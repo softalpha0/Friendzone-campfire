@@ -6,6 +6,7 @@ import { stateEntity, identity } from './sync'
 import { addWoodAction, sitByFire } from './campfire'
 import { gatherAction } from './wood'
 import { cheers, finishRoast, inviteEveryone, startRoast, warmUp } from './social'
+import { REACTIONS, sendReaction } from './reactions'
 
 const PANEL = Color4.create(0.05, 0.04, 0.03, 0.72)
 const PANEL_SOFT = Color4.create(0.05, 0.04, 0.03, 0.55)
@@ -179,11 +180,49 @@ function BottomArea() {
         onMouseDown={pb.action}
       />
 
-      <UiEntity uiTransform={{ flexDirection: 'row', margin: { top: 6, bottom: 4 } }}>
+      <UiEntity uiTransform={{ flexDirection: 'row', margin: { bottom: 4 } }}>
+        {REACTIONS.map((emoji, i) => (
+          <Button
+            key={i}
+            value={emoji}
+            fontSize={18}
+            uiTransform={{ width: 46, height: 38, margin: { right: 4 } }}
+            uiBackground={{ color: PANEL }}
+            color={CREAM}
+            onMouseDown={() => sendReaction(emoji)}
+          />
+        ))}
+      </UiEntity>
+
+      <UiEntity uiTransform={{ flexDirection: 'row', margin: { top: 2, bottom: 4 } }}>
         <UiEntity uiTransform={{ padding: { left: 8, right: 8, top: 4, bottom: 4 } }} uiBackground={{ color: PANEL_SOFT }}>
           <Label value={`🎒 ${local.carrying}/${CARRY_MAX}`} fontSize={13} color={local.carrying >= CARRY_MAX ? AMBER : CREAM} />
         </UiEntity>
+        {local.cozy && (
+          <UiEntity uiTransform={{ padding: { left: 8, right: 8, top: 4, bottom: 4 }, margin: { left: 6 } }} uiBackground={{ color: Color4.create(0.8, 0.35, 0.12, 0.85) }}>
+            <Label value="🔥 cozy" fontSize={13} color={CREAM} />
+          </UiEntity>
+        )}
         <Button value="🙋 Invite everyone" fontSize={13} uiTransform={{ width: 150, height: 30, margin: { left: 6 } }} uiBackground={{ color: PANEL }} color={CREAM} onMouseDown={inviteEveryone} />
+      </UiEntity>
+    </UiEntity>
+  )
+}
+
+function LevelBanner() {
+  if (now() >= local.levelBanner.until) return null
+  return (
+    <UiEntity
+      uiTransform={{
+        positionType: 'absolute',
+        position: { top: '32%', left: 0 },
+        width: '100%',
+        justifyContent: 'center',
+        alignItems: 'center'
+      }}
+    >
+      <UiEntity uiTransform={{ padding: { left: 24, right: 24, top: 12, bottom: 12 } }} uiBackground={{ color: Color4.create(0.8, 0.35, 0.12, 0.92) }}>
+        <Label value={`🔥  LEVEL ${local.levelBanner.level}!`} fontSize={30} color={CREAM} />
       </UiEntity>
     </UiEntity>
   )
@@ -245,6 +284,7 @@ function Hud() {
       <Leaderboard />
       <UiEntity uiTransform={{ flexGrow: 1 }} />
       <BottomArea />
+      <LevelBanner />
       <Welcome />
     </UiEntity>
   )

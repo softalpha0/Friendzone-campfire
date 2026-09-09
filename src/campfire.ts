@@ -22,7 +22,7 @@ import {
   SEAT_COUNT,
   SEAT_RADIUS
 } from './config'
-import { CampfireState, local, setToast } from './state'
+import { CampfireState, local, now, setToast } from './state'
 import { stateEntity, feedFire } from './sync'
 
 const STONE = Color4.fromHexString('#5a5a5eff')
@@ -39,6 +39,10 @@ const seatPositions: Vector3[] = []
 const logEntities: Entity[] = []
 let lastOut = false
 let lastStatusKey = ''
+
+let warmthRing: Entity
+const bursts: { e: Entity; vx: number; vy: number; vz: number; life: number }[] = []
+let celebrated = 0
 
 function cone(color: Color4, emissive: Color3, alpha = 1): Entity {
   const e = engine.addEntity()
@@ -305,10 +309,88 @@ function flameSystem(dt: number): void {
   }
 }
 
+function buildWarmthAndBurst(): void {
+  // Warmth ring: a soft glowing disc on the ground that grows with the fire.
+  warmthRing = engine.addEntity()
+  Transform.create(warmthRing, {
+    position: Vector3.create(FIRE_POS.x, 0.04, FIRE_POS.z),
+    scale: Vector3.create(6, 0.02, 6)
+  })
+  MeshRenderer.setCylinder(warmthRing)
+  Material.setPbrMaterial(warmthRing, {
+    albedoColor: Color4.create(1, 0.65, 0.3, 0.12),
+    emissiveColor: Color3.fromHexString('#ff9a45'),
+    emissiveIntensity: 0.6
+  })
+
+  // Celebration sparks for level-ups.
+  for (let i = 0; i < 20; i++) {
+    const e = engine.addEntity()
+    Transform.create(e, { position: Vector3.create(FIRE_POS.x, -20, FIRE_POS.z), scale: Vector3.create(0.12, 0.12, 0.12) })
+    MeshRenderer.setBox(e)
+    Material.setPbrMaterial(e, {
+      albedoColor: Color4.create(1, 0.85, 0.4, 1),
+      emissiveColor: Color3.fromHexString('#ffd27a'),
+      emissiveIntensity: 3
+    })
+    VisibilityComponent.create(e, { visible: false })
+    bursts.push({ e, vx: 0, vy: 0, vz: 0, life: 0 })
+  }
+}
+
+function warmthSystem(dt: number): void {
+  const s = CampfireState.getOrNull(stateEntity)
+  if (!s) return
+  const fuelF = Math.max(0, Math.min(1, s.fuel / MAX_FUEL))
+  const lvlF = (s.level - 1) / (MAX_LEVEL - 1)
+  const radius = 2.4 + lvlF * 3.2 + fuelF * 1.4
+  const tr = Transform.getMutable(warmthRing)
+  tr.scale.x = tr.scale.z = radius * 2
+  const pulse = 0.5 + 0.15 * Math.sin(now() * 2)
+  Material.setPbrMaterial(warmthRing, {
+    albedoColor: Color4.create(1, 0.65, 0.3, 0.1 + fuelF * 0.06),
+    emissiveColor: Color3.fromHexString('#ff9a45'),
+    emissiveIntensity: (0.4 + fuelF * 0.8) * pulse
+  })
+  local.cozy = local.distToFire <= radius
+
+  // Fire off the celebration burst once per level-up.
+  if (local.celebrateUntil > now() && celebrated < local.celebrateUntil) {
+    celebrated = local.celebrateUntil
+    for (const b of bursts) {
+      b.life = 1.2
+      const a = Math.random() * Math.PI * 2
+      const sp = 3 + Math.random() * 3
+      b.vx = Math.cos(a) * sp
+      b.vz = Math.sin(a) * sp
+      b.vy = 3.5 + Math.random() * 2.5
+      const t = Transform.getMutable(b.e)
+      t.position.x = FIRE_POS.x
+      t.position.y = 0.8
+      t.position.z = FIRE_POS.z
+      t.scale.x = t.scale.y = t.scale.z = 0.14
+      VisibilityComponent.createOrReplace(b.e, { visible: true })
+    }
+  }
+  for (const b of bursts) {
+    if (b.life <= 0) continue
+    b.life -= dt
+    const t = Transform.getMutable(b.e)
+    t.position.x += b.vx * dt
+    t.position.y += b.vy * dt
+    t.position.z += b.vz * dt
+    b.vy -= 7 * dt
+    t.scale.x = t.scale.y = t.scale.z = Math.max(0, 0.14 * (b.life / 1.2))
+    if (b.life <= 0) VisibilityComponent.createOrReplace(b.e, { visible: false })
+  }
+}
+
 export function setupCampfire(): void {
   buildFirePit()
   buildFlame()
   buildSeats()
+  buildWarmthAndBurst()
   engine.addSystem(proximitySystem)
   engine.addSystem(flameSystem)
+  engine.addSystem(warmthSystem)
 }

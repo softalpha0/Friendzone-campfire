@@ -13,7 +13,7 @@ import {
 import { Vector3, Quaternion, Color3, Color4 } from '@dcl/sdk/math'
 import { triggerEmote } from '~system/RestrictedActions'
 import { CARRY_MAX, GATHER_RANGE, LOGS_PER_GATHER, WOOD_PILES, WOOD_RESPAWN } from './config'
-import { local, setToast } from './state'
+import { local, now, setToast } from './state'
 import { sceneBus } from './sync'
 
 const WOOD = Color4.fromHexString('#6b4a2fff')
@@ -21,6 +21,8 @@ const WOOD_CUT = Color4.fromHexString('#c69a6dff')
 
 type Pile = { pos: Vector3; logs: Entity[]; ready: boolean; cooldown: number; rendered: boolean }
 const piles: Pile[] = []
+let guideArrow: Entity | undefined
+let guideShown = false
 
 function buildPile(pos: Vector3): Pile {
   const logs: Entity[] = []
@@ -125,6 +127,7 @@ function gatherFrom(pile: Pile): void {
   }
   const got = Math.min(LOGS_PER_GATHER, CARRY_MAX - local.carrying)
   local.carrying += got
+  local.hasGathered = true
   pile.ready = false
   pile.cooldown = WOOD_RESPAWN
   spawnChopFx(pile.pos)
@@ -172,10 +175,47 @@ function pileSystem(dt: number): void {
   }
   local.nearWood = !!near
   local.woodPileReady = !!near && near.ready
+
+  // First-timer guide arrow: hover over the nearest pile until the first gather.
+  if (guideArrow) {
+    if (local.hasGathered) {
+      if (guideShown) {
+        guideShown = false
+        VisibilityComponent.createOrReplace(guideArrow, { visible: false })
+      }
+    } else {
+      const target = near ?? piles[0]
+      if (target) {
+        if (!guideShown) {
+          guideShown = true
+          VisibilityComponent.createOrReplace(guideArrow, { visible: true })
+        }
+        const t = Transform.getMutable(guideArrow)
+        t.position.x = target.pos.x
+        t.position.z = target.pos.z
+        t.position.y = 2.2 + Math.sin(now() * 3) * 0.18
+        t.rotation = Quaternion.fromEulerDegrees(180, (now() * 60) % 360, 0)
+      }
+    }
+  }
 }
 
 export function setupWood(): void {
   for (const pos of WOOD_PILES) piles.push(buildPile(pos))
+
+  guideArrow = engine.addEntity()
+  Transform.create(guideArrow, {
+    position: Vector3.create(0, -20, 0),
+    scale: Vector3.create(0.5, 0.7, 0.5),
+    rotation: Quaternion.fromEulerDegrees(180, 0, 0)
+  })
+  MeshRenderer.setCylinder(guideArrow, 0, 0.5)
+  Material.setPbrMaterial(guideArrow, {
+    albedoColor: Color4.create(1, 0.85, 0.3, 1),
+    emissiveColor: Color3.fromHexString('#ffd257'),
+    emissiveIntensity: 1.6
+  })
+  VisibilityComponent.create(guideArrow, { visible: false })
 
   for (let i = 0; i < 12; i++) {
     const e = engine.addEntity()

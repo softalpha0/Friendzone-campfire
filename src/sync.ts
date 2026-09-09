@@ -1,7 +1,7 @@
 import { engine } from '@dcl/sdk/ecs'
 import { syncEntity, myProfile } from '@dcl/sdk/network'
 import { MessageBus } from '@dcl/sdk/message-bus'
-import { getPlayer } from '@dcl/sdk/players'
+import { getPlayer, onEnterScene } from '@dcl/sdk/players'
 import {
   DECAY_PER_SEC,
   FUEL_PER_LOG,
@@ -132,6 +132,8 @@ function coreSystem(dt: number): void {
   if (s.level > lastSeenLevel) {
     lastSeenLevel = s.level
     local.flameBump = 1
+    local.celebrateUntil = now() + 1.4
+    local.levelBanner = { level: s.level, until: now() + 2.6 }
     setToast(`🔥 The campfire reached Level ${s.level}!`, 4.5)
   } else if (s.level < lastSeenLevel) {
     lastSeenLevel = s.level
@@ -164,4 +166,14 @@ export function setupSync(): void {
   engine.addSystem(coreSystem)
   // Seed the local leaderboard with an empty self entry so the HUD has a row.
   roster.clear()
+
+  // Greet arrivals so the camp feels populated.
+  try {
+    onEnterScene((player) => {
+      if (!player || player.userId === identity().id) return
+      setToast(`${player.name || 'Someone'} joined the campfire 🔥`, 3.5)
+    })
+  } catch (e) {
+    console.error('[campfire] onEnterScene hook failed', e)
+  }
 }

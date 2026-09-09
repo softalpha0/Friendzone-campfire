@@ -58,9 +58,13 @@ export const local = {
   distToFire: 999,
   nearWood: false,
   woodPileReady: false,
+  hasGathered: false,
   showWelcome: true,
   welcomeUntil: 0,
   flameBump: 0,
+  cozy: false,
+  celebrateUntil: 0,
+  levelBanner: { level: 0, until: 0 },
   roast: { active: false, t: 0, result: '', resultUntil: 0 } as RoastState,
   toast: { text: '', until: 0 }
 }
