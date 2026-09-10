@@ -4,6 +4,7 @@ import { setupCampfire } from './campfire'
 import { setupWood } from './wood'
 import { setupSocial } from './social'
 import { setupReactions } from './reactions'
+import { setupRoles } from './roles'
 import { setupUi } from './ui'
 
 export function main(): void {
@@ -15,6 +16,7 @@ export function main(): void {
     ['sync', setupSync],
     ['social', setupSocial],
     ['reactions', setupReactions],
+    ['roles', setupRoles],
     ['ui', setupUi]
   ]
   for (const [name, run] of steps) {

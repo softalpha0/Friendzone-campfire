@@ -19,8 +19,10 @@ import {
   local,
   roster,
   recordContribution,
+  recordGathered,
   setToast
 } from './state'
+import { loadPersisted, savePersisted } from './persistence'
 
 /** Scene-wide message bus for ephemeral social events (toasts, FX, invites). */
 export const sceneBus = new MessageBus()
@@ -68,8 +70,14 @@ export function feedFire(logs: number): void {
 
 // --- Networked social events -----------------------------------------
 type FeedMsg = { id: string; name: string; logs: number; total: number }
-type RosterMsg = { id: string; name: string; total: number }
+type RosterMsg = { id: string; name: string; logs: number; gathered: number }
+type WoodMsg = { id: string; name: string; total: number }
 type NameMsg = { name: string }
+
+function selfRoster(): RosterMsg {
+  const me = identity()
+  return { id: me.id, name: me.name, logs: local.contributed, gathered: local.gathered }
+}
 
 sceneBus.on('feed', (m: FeedMsg) => {
   if (m.id === identity().id) return
@@ -78,14 +86,19 @@ sceneBus.on('feed', (m: FeedMsg) => {
   setToast(`${m.name} fed the fire +${m.logs} 🪵`)
 })
 
+sceneBus.on('wood', (m: WoodMsg) => {
+  if (m.id === identity().id) return
+  recordGathered(m.id, m.name, m.total)
+})
+
 sceneBus.on('roster', (m: RosterMsg) => {
   if (m.id === identity().id) return
-  recordContribution(m.id, m.name, m.total)
+  recordContribution(m.id, m.name, m.logs)
+  recordGathered(m.id, m.name, m.gathered)
 })
 
 sceneBus.on('hello', () => {
-  const me = identity()
-  sceneBus.emit('roster', { id: me.id, name: me.name, total: local.contributed })
+  sceneBus.emit('roster', selfRoster())
 })
 
 sceneBus.on('invite', (m: NameMsg) => {
@@ -108,12 +121,24 @@ let sinceHeartbeat = 0
 let saidHello = false
 let helloTimer = 0
 let lastSeenLevel = 1
+let loadTimer = 0
+let didLoad = false
+let sinceSave = 0
 
 function coreSystem(dt: number): void {
   advanceClock(dt)
 
   const s = CampfireState.getOrNull(stateEntity)
   if (!s) return
+
+  // Pull persisted camp history a moment after load (best-effort).
+  if (!didLoad) {
+    loadTimer += dt
+    if (loadTimer > 2) {
+      didLoad = true
+      void loadPersisted()
+    }
+  }
 
   // Keep our clock in step with the furthest-ahead client.
   reconcileClock(s.lastTickAt)
@@ -135,6 +160,7 @@ function coreSystem(dt: number): void {
     local.celebrateUntil = now() + 1.4
     local.levelBanner = { level: s.level, until: now() + 2.6 }
     setToast(`🔥 The campfire reached Level ${s.level}!`, 4.5)
+    void savePersisted()
   } else if (s.level < lastSeenLevel) {
     lastSeenLevel = s.level
   }
@@ -155,10 +181,14 @@ function coreSystem(dt: number): void {
   sinceHeartbeat += dt
   if (sinceHeartbeat > 3) {
     sinceHeartbeat = 0
-    if (local.contributed > 0) {
-      const me = identity()
-      sceneBus.emit('roster', { id: me.id, name: me.name, total: local.contributed })
-    }
+    if (local.contributed > 0 || local.gathered > 0) sceneBus.emit('roster', selfRoster())
+  }
+
+  // Periodically persist camp progress so it survives an empty World.
+  sinceSave += dt
+  if (sinceSave > 30) {
+    sinceSave = 0
+    if (didLoad && s.totalLogs > 0) void savePersisted()
   }
 }
 

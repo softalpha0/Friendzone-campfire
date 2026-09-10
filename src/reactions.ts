@@ -33,12 +33,12 @@ function spawnAt(pos: Vector3, emoji: string): void {
   VisibilityComponent.createOrReplace(f.e, { visible: true })
 }
 
-function localPlayerPos(): Vector3 {
-  return Transform.getOrNull(engine.PlayerEntity)?.position ?? FIRE_POS
-}
-
-function posByAddress(addr: string): Vector3 | null {
-  const target = addr.toLowerCase()
+/** World position of any player (local or remote) by address, if known. */
+export function playerWorldPos(addr: string): Vector3 | null {
+  if (addr && addr.toLowerCase() === identity().id.toLowerCase()) {
+    return Transform.getOrNull(engine.PlayerEntity)?.position ?? null
+  }
+  const target = (addr ?? '').toLowerCase()
   for (const [e, id] of engine.getEntitiesWith(PlayerIdentityData)) {
     if ((id.address ?? '').toLowerCase() === target) {
       const t = Transform.getOrNull(e)
@@ -49,7 +49,7 @@ function posByAddress(addr: string): Vector3 | null {
 }
 
 export function sendReaction(emoji: string): void {
-  spawnAt(localPlayerPos(), emoji)
+  spawnAt(playerWorldPos(identity().id) ?? FIRE_POS, emoji)
   sceneBus.emit('react', { id: identity().id, emoji })
 }
 
@@ -87,7 +87,7 @@ export function setupReactions(): void {
 
   sceneBus.on('react', (m: { id: string; emoji: string }) => {
     if (m.id === identity().id) return
-    spawnAt(posByAddress(m.id) ?? FIRE_POS, m.emoji)
+    spawnAt(playerWorldPos(m.id) ?? FIRE_POS, m.emoji)
   })
 
   engine.addSystem(floatSystem)

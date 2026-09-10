@@ -13,8 +13,8 @@ import {
 import { Vector3, Quaternion, Color3, Color4 } from '@dcl/sdk/math'
 import { triggerEmote } from '~system/RestrictedActions'
 import { CARRY_MAX, GATHER_RANGE, LOGS_PER_GATHER, WOOD_PILES, WOOD_RESPAWN } from './config'
-import { local, now, setToast } from './state'
-import { sceneBus } from './sync'
+import { local, now, recordGathered, setToast } from './state'
+import { sceneBus, identity } from './sync'
 
 const WOOD = Color4.fromHexString('#6b4a2fff')
 const WOOD_CUT = Color4.fromHexString('#c69a6dff')
@@ -127,11 +127,15 @@ function gatherFrom(pile: Pile): void {
   }
   const got = Math.min(LOGS_PER_GATHER, CARRY_MAX - local.carrying)
   local.carrying += got
+  local.gathered += got
   local.hasGathered = true
   pile.ready = false
   pile.cooldown = WOOD_RESPAWN
   spawnChopFx(pile.pos)
   sceneBus.emit('chop', { x: pile.pos.x, z: pile.pos.z })
+  const me = identity()
+  recordGathered(me.id, me.name, local.gathered)
+  sceneBus.emit('wood', { id: me.id, name: me.name, total: local.gathered })
   void triggerEmote({ predefinedEmote: 'hammer' })
   setToast(`+${got} logs  (carrying ${local.carrying}/${CARRY_MAX})`)
 }

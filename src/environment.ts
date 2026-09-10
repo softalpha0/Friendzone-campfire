@@ -9,7 +9,7 @@ import {
 } from '@dcl/sdk/ecs'
 import { Vector3, Quaternion, Color3, Color4 } from '@dcl/sdk/math'
 import { FIRE_POS, PARCEL_SIZE, WORLD_URL, nextLevelAt } from './config'
-import { CampfireState } from './state'
+import { CampfireState, leaderBy } from './state'
 import { stateEntity } from './sync'
 
 const GRASS = Color4.fromHexString('#33471fff')
@@ -134,16 +134,20 @@ let boardKey = ''
 function boardSystem(): void {
   const s = CampfireState.getOrNull(stateEntity)
   if (!s || !boardLabel) return
-  const key = `${s.level}|${s.totalLogs}|${s.savedCount}`
+  const fk = leaderBy('logs')
+  const wc = leaderBy('gathered')
+  const key = `${s.level}|${s.totalLogs}|${s.savedCount}|${fk?.name ?? ''}|${wc?.name ?? ''}`
   if (key === boardKey) return
   boardKey = key
   const next = nextLevelAt(s.level)
   const nextLine = next === null ? 'MAX LEVEL — legendary camp' : `Next level at ${next} logs`
+  const trim = (n?: string) => (n ? n.slice(0, 14) : '—')
   TextShape.getMutable(boardLabel).text =
     `CAMP LOG\n` +
     `Level ${s.level}   •   ${s.totalLogs} logs burned\n` +
     `${nextLine}\n` +
-    `Saved from going out: ${s.savedCount}x`
+    `Rescued from the cold: ${s.savedCount}x\n` +
+    `🔥 Firekeeper: ${trim(fk?.name)}   🪓 Woodcutter: ${trim(wc?.name)}`
 }
 
 export function setupEnvironment(): void {

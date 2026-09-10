@@ -54,6 +54,7 @@ export type RoastState = {
 export const local = {
   carrying: 0,
   contributed: 0,
+  gathered: 0,
   nearFire: false,
   distToFire: 999,
   nearWood: false,
@@ -75,19 +76,37 @@ export function setToast(text: string, seconds = 3.2): void {
 }
 
 // --- Session leaderboard (ephemeral, rebuilt from network messages) -----
-export type RosterEntry = { name: string; logs: number }
+export type RosterEntry = { id: string; name: string; logs: number; gathered: number }
 export const roster = new Map<string, RosterEntry>()
 
-export function recordContribution(userId: string, name: string, logs: number): void {
-  const cur = roster.get(userId)
-  if (cur) {
-    cur.logs = logs
-    cur.name = name || cur.name
-  } else {
-    roster.set(userId, { name: name || 'Camper', logs })
+function ensure(userId: string, name: string): RosterEntry {
+  let cur = roster.get(userId)
+  if (!cur) {
+    cur = { id: userId, name: name || 'Camper', logs: 0, gathered: 0 }
+    roster.set(userId, cur)
+  } else if (name) {
+    cur.name = name
   }
+  return cur
+}
+
+export function recordContribution(userId: string, name: string, logs: number): void {
+  ensure(userId, name).logs = logs
+}
+
+export function recordGathered(userId: string, name: string, gathered: number): void {
+  ensure(userId, name).gathered = gathered
 }
 
 export function topCampers(n: number): RosterEntry[] {
   return [...roster.values()].sort((a, b) => b.logs - a.logs).slice(0, n)
+}
+
+/** The player with the most of a given stat, if it's above zero. */
+export function leaderBy(key: 'logs' | 'gathered'): RosterEntry | null {
+  let best: RosterEntry | null = null
+  for (const e of roster.values()) {
+    if (e[key] > 0 && (!best || e[key] > best[key])) best = e
+  }
+  return best
 }

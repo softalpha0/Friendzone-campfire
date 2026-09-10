@@ -71,3 +71,9 @@ export const SYNC_STATE_ENUM_ID = 2001
 // --- Sharing --------------------------------------------------------
 // Shown on the in-scene "Bring a friend" sign.
 export const WORLD_URL = 'softalpha.dcl.eth'
+
+// --- Cross-session persistence (optional) --------------------------
+// Set this to a Firebase Realtime Database URL (e.g. https://xxxx-default-rtdb.firebaseio.com)
+// with public rules to make the camp level, rescues and roles survive an empty
+// World. Leave "" to disable — the scene works fully without it.
+export const PERSIST_URL = ''
