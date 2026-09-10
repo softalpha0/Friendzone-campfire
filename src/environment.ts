@@ -48,32 +48,41 @@ function tree(x: number, z: number, h: number): void {
 }
 
 function sign(pos: Vector3, rotY: number, text: string, fontSize = 1): Entity {
-  // Post
+  const rad = (rotY * Math.PI) / 180
+  const nx = Math.sin(rad)
+  const nz = Math.cos(rad)
+
   const post = engine.addEntity()
-  Transform.create(post, { position: Vector3.create(pos.x, 0.9, pos.z), scale: Vector3.create(0.12, 1.8, 0.12) })
+  Transform.create(post, { position: Vector3.create(pos.x, 0.75, pos.z), scale: Vector3.create(0.12, 1.5, 0.12) })
   MeshRenderer.setBox(post)
   Material.setPbrMaterial(post, { albedoColor: PLANK, roughness: 1 })
-  // Board
+
   const board = engine.addEntity()
   Transform.create(board, {
-    position: Vector3.create(pos.x, 1.9, pos.z),
-    scale: Vector3.create(2.6, 1.6, 0.08),
+    position: Vector3.create(pos.x, 1.6, pos.z),
+    scale: Vector3.create(2.2, 1.1, 0.08),
     rotation: Quaternion.fromEulerDegrees(0, rotY, 0)
   })
   MeshRenderer.setBox(board)
-  Material.setPbrMaterial(board, { albedoColor: PLANK, roughness: 1 })
-  // Text
+  Material.setPbrMaterial(board, {
+    albedoColor: Color4.fromHexString('#8a6440ff'),
+    emissiveColor: Color3.fromHexString('#3a2a1c'),
+    emissiveIntensity: 0.25,
+    roughness: 1
+  })
+
+  // Text sits just in front of the board face so it can't z-fight.
   const label = engine.addEntity()
   Transform.create(label, {
-    position: Vector3.create(pos.x, 1.9, pos.z),
+    position: Vector3.create(pos.x + nx * 0.06, 1.6, pos.z + nz * 0.06),
     rotation: Quaternion.fromEulerDegrees(0, rotY, 0)
   })
   TextShape.create(label, {
     text,
     fontSize,
-    textColor: Color4.create(1, 0.95, 0.85, 1),
+    textColor: Color4.create(1, 0.96, 0.88, 1),
     outlineColor: Color4.Black(),
-    outlineWidth: 0.15
+    outlineWidth: 0.12
   })
   return label
 }
@@ -140,14 +149,12 @@ function boardSystem(): void {
   if (key === boardKey) return
   boardKey = key
   const next = nextLevelAt(s.level)
-  const nextLine = next === null ? 'MAX LEVEL — legendary camp' : `Next level at ${next} logs`
-  const trim = (n?: string) => (n ? n.slice(0, 14) : '—')
+  const nextLine = next === null ? 'MAX LEVEL' : `next at ${next}`
+  const trim = (n?: string) => (n ? n.slice(0, 12) : '-')
   TextShape.getMutable(boardLabel).text =
     `CAMP LOG\n` +
-    `Level ${s.level}   •   ${s.totalLogs} logs burned\n` +
-    `${nextLine}\n` +
-    `Rescued from the cold: ${s.savedCount}x\n` +
-    `🔥 Firekeeper: ${trim(fk?.name)}   🪓 Woodcutter: ${trim(wc?.name)}`
+    `Level ${s.level}  ·  ${s.totalLogs} logs  ·  ${nextLine}\n` +
+    `rescued ${s.savedCount}x  ·  Firekeeper ${trim(fk?.name)}`
 }
 
 export function setupEnvironment(): void {
@@ -218,24 +225,19 @@ export function setupEnvironment(): void {
     fireflies.push({ e, base, phase: angle, radius: 0.5 + (i % 3) * 0.25 })
   }
 
-  // Signs
+  // Signs — kept short so the text fits the board; the HUD teaches the rest.
   sign(
     Vector3.create(5.5, 0, 4.2),
     35,
-    '⛺  FRIENDZONE CAMPFIRE\n\n' +
-      'The fire always burns down.\nKeep it alive together!\n\n' +
-      '1  Tap a WOOD PILE to gather\n' +
-      '2  Go to the fire, tap ADD WOOD\n' +
-      '3  Level up the camp as a group\n\n' +
-      'Roast marshmallows • invite friends • stay a while',
-    0.7
+    'FRIENDZONE CAMPFIRE\n\nGATHER wood  ·  FEED the fire\nLevel up the camp together',
+    0.9
   )
-  boardLabel = sign(Vector3.create(11.0, 0, 11.4), -135, 'CAMP LOG', 0.9)
+  boardLabel = sign(Vector3.create(11.0, 0, 11.4), -135, 'CAMP LOG', 0.8)
   sign(
     Vector3.create(11.4, 0, 5.0),
     -45,
-    'BRING A FRIEND\n\nShare this World:\n' + WORLD_URL + '\n\nThe fire burns brighter\nwith more hands around it.',
-    0.8
+    'BRING A FRIEND\n\n' + WORLD_URL,
+    0.9
   )
 
   engine.addSystem(lanternSystem)
